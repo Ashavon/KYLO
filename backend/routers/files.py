@@ -39,7 +39,7 @@ def list_files(
     conn = get_connection()
     c = conn.cursor()
 
-    clauses = ["1=1"]
+    clauses = ["status != 'binned'"]  # never show binned files in library
     params = []
     if subject:
         clauses.append("subject = ?")
@@ -198,49 +198,70 @@ def update_note(file_id: int, payload: dict):
 @router.post("/{file_id}/bin")
 def move_to_bin(file_id: int):
     conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT * FROM files WHERE id = ?", (file_id,))
-    row = c.fetchone()
-    if not row:
+    try:
+        c = conn.cursor()
+        c.execute("SELECT * FROM files WHERE id = ?", (file_id,))
+        row = c.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        file_data = row_to_dict(row)
+        if file_data.get("status") == "binned":
+            raise HTTPException(status_code=400, detail="File is already in the bin")
+
+        original_path = file_data["current_path"]
+        src = Path(original_path)
+
+        bin_dir = Path(_CONFIG.get("duplicates_bin_path", "./data/duplicates_bin")).resolve()
+        bin_dir.mkdir(parents=True, exist_ok=True)
+
+        dest = bin_dir / src.name
+        counter = 1
+        while dest.exists():
+            dest = bin_dir / f"{src.stem}_{counter}{src.suffix}"
+            counter += 1
+
+        # Log to undo BEFORE moving
+        from backend.routers.undo import append_operation
+        append_operation({
+            "op": "bin",
+            "original_path": str(src),
+            "new_path": str(dest),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "reversible": True,
+        })
+
+        # Move the file
+        if src.exists():
+            shutil.move(str(src), str(dest))
+        else:
+            log.warning("move_to_bin: source file not found on disk: %s (continuing with DB update)", src)
+
+        # Also move the sidecar if present
+        sidecar_src = src.with_suffix("").parent / (src.stem + ".kylo.json")
+        if sidecar_src.exists():
+            sidecar_dest = dest.parent / (dest.stem + ".kylo.json")
+            shutil.move(str(sidecar_src), str(sidecar_dest))
+
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            "UPDATE files SET status = 'binned', current_path = ?, date_modified = ? WHERE id = ?",
+            (str(dest), now, file_id),
+        )
+        conn.execute(
+            """INSERT INTO duplicates_bin (file_id, original_path, bin_path, date_binned)
+               VALUES (?, ?, ?, ?)""",
+            (file_id, original_path, str(dest), now),
+        )
+        conn.commit()
+        return {"status": "binned", "bin_path": str(dest)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error("move_to_bin failed for file_id=%s: %s", file_id, e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Could not move to bin: {e}")
+    finally:
         conn.close()
-        raise HTTPException(status_code=404, detail="File not found")
-
-    file_data = row_to_dict(row)
-    src = Path(file_data["current_path"])
-    bin_dir = Path(_CONFIG.get("duplicates_bin_path", "./data/duplicates_bin"))
-    bin_dir.mkdir(parents=True, exist_ok=True)
-    dest = bin_dir / src.name
-
-    counter = 1
-    while dest.exists():
-        dest = bin_dir / f"{src.stem}_{counter}{src.suffix}"
-        counter += 1
-
-    from backend.routers.undo import append_operation
-    append_operation({
-        "op": "bin",
-        "original_path": str(src),
-        "new_path": str(dest),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "reversible": True,
-    })
-
-    if src.exists():
-        shutil.move(str(src), str(dest))
-
-    now = datetime.now(timezone.utc).isoformat()
-    conn.execute(
-        "UPDATE files SET status = 'binned', current_path = ?, date_modified = ? WHERE id = ?",
-        (str(dest), now, file_id),
-    )
-    conn.execute(
-        """INSERT INTO duplicates_bin (file_id, original_path, bin_path, date_binned)
-           VALUES (?, ?, ?, ?)""",
-        (file_id, file_data["current_path"], str(dest), now),
-    )
-    conn.commit()
-    conn.close()
-    return {"status": "binned", "bin_path": str(dest)}
 
 
 @router.post("/{file_id}/send_to_wiki")
