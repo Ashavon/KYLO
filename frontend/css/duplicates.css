@@ -1,0 +1,114 @@
+/* ─────────────────────────────────────────────
+   KYLO — Duplicates Bin View
+───────────────────────────────────────────── */
+
+.dup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.dup-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+  position: relative;
+  border-left: 3px solid var(--color-muted);
+}
+
+.dup-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dup-card-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  flex: 1;
+  word-break: break-all;
+  color: var(--color-text);
+}
+
+.dup-card-meta {
+  font-size: 11px;
+  color: var(--color-muted);
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+.dup-card-meta strong { color: var(--color-text); }
+
+.dup-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  margin-bottom: 10px;
+}
+
+.dup-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.dup-btn {
+  background: #f8fafc;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+.dup-btn:hover { background: #e2e8f0; }
+.dup-btn.restore { color: var(--color-success); border-color: #86efac; }
+.dup-btn.restore:hover { background: #dcfce7; }
+.dup-btn.delete  { color: var(--color-danger); border-color: #fca5a5; }
+.dup-btn.delete:hover { background: #fee2e2; }
+
+/* Review panel (side-by-side) */
+.dup-review-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.dup-diff-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.dup-diff-side {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  overflow: auto;
+  max-height: 200px;
+}
+.dup-review-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Delete confirmation dialog */
+.confirm-delete-dialog {
+  background: var(--bg-card);
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-card);
+  padding: 20px;
+  max-width: 380px;
+  margin: 0 auto;
+}
+.confirm-delete-dialog h4 { color: var(--color-danger); margin: 0 0 10px; }
+.confirm-delete-actions { display: flex; gap: 8px; margin-top: 14px; }

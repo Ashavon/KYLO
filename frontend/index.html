@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KYLO — Know Your Local Objects</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- KYLO Styles -->
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/layout.css" />
+  <link rel="stylesheet" href="/static/css/cards.css" />
+  <link rel="stylesheet" href="/static/css/duplicates.css" />
+  <link rel="stylesheet" href="/static/css/query.css" />
+</head>
+<body>
+
+<!-- ───── HEADER ───── -->
+<header id="kylo-header">
+  <div class="header-brand">
+    <span class="brand-icon">🗂️</span>
+    <span class="brand-name">KYLO</span>
+  </div>
+
+  <div class="header-search">
+    <input type="text" id="global-search" placeholder="Search your knowledge base…" autocomplete="off" />
+    <span class="search-shortcut">⌘K</span>
+  </div>
+
+  <div class="header-actions">
+    <button id="btn-undo" class="btn-icon" title="Undo (Ctrl+Z)">↩️ Undo</button>
+    <button id="btn-settings" class="btn-icon" title="Settings">⚙️</button>
+  </div>
+</header>
+
+<!-- ───── AI BANNER (shown when Ollama is offline) ───── -->
+<div id="ai-banner" class="ai-banner hidden">
+  ⚠️ <strong>Ollama not connected</strong> — AI features disabled.
+  <a href="https://ollama.com" target="_blank">Install Ollama</a>, then run:
+  <code>ollama pull gemma3:4b &amp;&amp; ollama pull nomic-embed-text</code>
+  <button class="banner-dismiss" onclick="document.getElementById('ai-banner').classList.add('hidden')">✕</button>
+</div>
+
+<!-- ───── MAIN LAYOUT ───── -->
+<div id="app-layout">
+
+  <!-- LEFT SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sidebar-section">
+      <a href="#" class="sidebar-item active" data-view="library">
+        <span class="sidebar-icon">📚</span> All Files
+      </a>
+      <a href="#" class="sidebar-item" data-view="inbox">
+        <span class="sidebar-icon">📥</span> Inbox
+        <span id="inbox-badge" class="badge-count hidden">0</span>
+      </a>
+      <a href="#" class="sidebar-item" data-view="duplicates">
+        <span class="sidebar-icon">👯</span> Duplicates
+      </a>
+      <a href="#" class="sidebar-item" data-view="bin">
+        <span class="sidebar-icon">🗑️</span> Bin
+      </a>
+      <a href="#" class="sidebar-item" data-view="tags">
+        <span class="sidebar-icon">🏷️</span> Tags
+      </a>
+      <a href="#" class="sidebar-item" data-view="settings">
+        <span class="sidebar-icon">⚙️</span> Settings
+      </a>
+    </div>
+
+    <div class="sidebar-section sidebar-stats" id="sidebar-stats">
+      <div class="stats-title">Library</div>
+      <div class="stat-row"><span>Files</span><strong id="stat-total">—</strong></div>
+      <div class="stat-row"><span>Subjects</span><strong id="stat-subjects">—</strong></div>
+    </div>
+
+    <div class="sidebar-section">
+      <button id="btn-ask-kylo" class="btn-ask-kylo">
+        <span>💬</span> Ask KYLO
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main-content">
+
+    <!-- ── LIBRARY VIEW ── -->
+    <div id="view-library" class="view active">
+      <div id="subject-chips" class="subject-chips-row"></div>
+      <div id="active-filters" class="active-filters hidden"></div>
+
+      <!-- Drag-drop zone -->
+      <div id="drop-zone" class="drop-zone">
+        <span>📎 Drop files here to add to inbox</span>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button id="btn-view-grid" class="view-toggle active" title="Grid view">⊞</button>
+          <button id="btn-view-list" class="view-toggle" title="List view">☰</button>
+          <span id="file-count" class="file-count">— files</span>
+        </div>
+        <div class="toolbar-right">
+          <button id="btn-batch-rename" class="btn-secondary hidden">✨ Batch AI Rename</button>
+          <button id="btn-batch-tag" class="btn-secondary hidden">🏷️ Batch Tag</button>
+          <button id="btn-batch-bin" class="btn-danger hidden">🗑 Move to Bin</button>
+        </div>
+      </div>
+
+      <div id="file-grid" class="file-grid"></div>
+      <div id="load-more-wrap" class="load-more-wrap hidden">
+        <button id="btn-load-more" class="btn-secondary">+ Load more</button>
+      </div>
+    </div>
+
+    <!-- ── INBOX VIEW ── -->
+    <div id="view-inbox" class="view">
+      <div class="view-header">
+        <h2>📥 Inbox</h2>
+        <p class="view-subtitle">Files waiting to be processed. Drop new files here or into the library view.</p>
+      </div>
+      <div id="inbox-list" class="inbox-list"></div>
+    </div>
+
+    <!-- ── DUPLICATES VIEW ── -->
+    <div id="view-duplicates" class="view">
+      <div class="view-header">
+        <h2>👯 Duplicates Bin</h2>
+        <p class="view-subtitle">Files moved here are kept — never permanently deleted until you confirm.</p>
+      </div>
+      <div id="duplicates-grid" class="dup-grid"></div>
+    </div>
+
+    <!-- ── BIN VIEW ── -->
+    <div id="view-bin" class="view">
+      <div class="view-header">
+        <h2>🗑️ Bin</h2>
+        <p class="view-subtitle">Soft-deleted files. Restore or permanently delete from here.</p>
+      </div>
+      <div id="bin-grid" class="dup-grid"></div>
+    </div>
+
+    <!-- ── TAGS VIEW ── -->
+    <div id="view-tags" class="view">
+      <div class="view-header"><h2>🏷️ Tags</h2></div>
+      <div id="tags-list" class="tags-list"></div>
+    </div>
+
+    <!-- ── SETTINGS VIEW ── -->
+    <div id="view-settings" class="view">
+      <div class="view-header"><h2>⚙️ Settings</h2></div>
+      <div id="settings-form" class="settings-form"></div>
+    </div>
+
+  </main>
+
+</div><!-- /#app-layout -->
+
+<!-- ───── SLIDE-OVER PANELS ───── -->
+
+<!-- Ask KYLO panel -->
+<div id="query-panel" class="slide-panel hidden">
+  <div class="slide-panel-header">
+    <span>💬 Ask KYLO</span>
+    <button class="panel-close" id="query-close">✕</button>
+  </div>
+  <div id="query-messages" class="query-messages"></div>
+  <div class="query-input-row">
+    <input type="text" id="query-input" placeholder="Ask anything about your files…" />
+    <button id="query-send">Send</button>
+  </div>
+</div>
+
+<!-- Undo panel -->
+<div id="undo-panel" class="slide-panel hidden">
+  <div class="slide-panel-header">
+    <span>↩️ Undo History</span>
+    <button class="panel-close" id="undo-close">✕</button>
+  </div>
+  <div id="undo-list" class="undo-list"></div>
+</div>
+
+<!-- File preview modal -->
+<div id="preview-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span id="preview-filename" class="mono"></span>
+      <button class="panel-close" id="preview-close">✕</button>
+    </div>
+    <div id="preview-content" class="preview-content"></div>
+  </div>
+</div>
+
+<!-- Ingest approval modal -->
+<div id="ingest-modal" class="modal-overlay hidden">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <span>✨ Review AI Proposal</span>
+      <button class="panel-close" id="ingest-close">✕</button>
+    </div>
+    <div id="ingest-modal-body"></div>
+  </div>
+</div>
+
+<!-- Batch rename modal -->
+<div id="batch-modal" class="modal-overlay hidden">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <span>✨ Batch AI Rename</span>
+      <button class="panel-close" id="batch-close">✕</button>
+    </div>
+    <div id="batch-modal-body"></div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- KYLO Scripts -->
+<script src="/static/js/api.js"></script>
+<script src="/static/js/undo.js"></script>
+<script src="/static/js/tags.js"></script>
+<script src="/static/js/preview.js"></script>
+<script src="/static/js/rename.js"></script>
+<script src="/static/js/duplicates.js"></script>
+<script src="/static/js/query.js"></script>
+<script src="/static/js/explorer.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

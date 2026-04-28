@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments (shared _env lives at drive root, outside this repo)
+.venv/
+venv/
+env/
+
+# KYLO personal data — never commit
+data/inbox/*
+data/library/*
+data/duplicates_bin/*
+data/chroma/*
+!data/inbox/.gitkeep
+!data/library/.gitkeep
+!data/duplicates_bin/.gitkeep
+!data/chroma/.gitkeep
+
+# Database (auto-created on startup)
+backend/db/kylo.db
+backend/db/kylo.db-shm
+backend/db/kylo.db-wal
+
+# Logs
+logs/kylo_activity.log
+logs/kylo_undo.json
+!logs/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Env files
+.env
+
+# PKM wiki (external repo)
+pkm_wiki/
+
+# Test files added during build
+data/inbox/test_*.pdf
+data/inbox/test_*.docx
+data/inbox/test_*.jpg
+
+# Claude Code session files
+.claude/
+
+# Build prompt (not part of the project itself)
+KYLO_claude_code_prompt.md
+
+# Stray venv files (if accidentally created in project root)
+Lib/
+Scripts/
+pyvenv.cfg
+include/

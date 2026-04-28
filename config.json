@@ -1,0 +1,22 @@
+{
+  "library_path": "./data/library",
+  "inbox_path": "./data/inbox",
+  "duplicates_bin_path": "./data/duplicates_bin",
+  "pkm_wiki_path": "../PKM_WIKI",
+  "shared_path": "../SHARED",
+  "ollama_base_url": "http://localhost:11434",
+  "ollama_text_model": "gemma3:4b",
+  "ollama_vision_model": "gemma3:4b",
+  "ollama_embed_model": "nomic-embed-text",
+  "ocr_engine": "tesseract",
+  "naming_convention": "[Subject]_[What]_[Where]_[Who]_[When]",
+  "auto_approve_naming": false,
+  "semantic_dedup_threshold": 0.92,
+  "image_dedup_phash_threshold": 10,
+  "batch_rename_preview": true,
+  "auto_copy_to_pkm": false,
+  "ui_theme": "light",
+  "ui_font": "inter",
+  "inbox_watch_enabled": true,
+  "port": 8765
+}
