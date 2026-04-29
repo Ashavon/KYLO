@@ -76,7 +76,7 @@ def list_files(
 def get_subjects():
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT subject, COUNT(*) as count FROM files WHERE subject IS NOT NULL GROUP BY subject ORDER BY count DESC")
+    c.execute("SELECT subject, COUNT(*) as count FROM files WHERE subject IS NOT NULL AND status != 'binned' GROUP BY subject ORDER BY count DESC")
     subjects = [{"subject": r["subject"], "count": r["count"]} for r in c.fetchall()]
     conn.close()
     return {"subjects": subjects}
